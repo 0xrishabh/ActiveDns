@@ -1,0 +1,31 @@
+name: scrape
+
+on:
+  schedule:
+  - cron: "*/5 * * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: setup
+      run: |
+          git clone https://github.com/vortexau/dnsvalidator
+          cd dnsvalidator
+          pip3 install wheel
+          pip3 install setuptools
+          sudo python3 setup.py install
+          rm ../resolvers.txt
+          dnsvalidator -tL https://public-dns.info/nameservers.txt -threads 20 -o resolvers.txt
+          sed -i '/^$/d' ../resolvers.txt
+    - name: Save
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add . 
+        git commit -m "update" 
+        git push "https://0xrishabh:${{ secrets.GITHUB_PERSONAL_TOKEN }}@github.com/0xrishabh/ActiveDns.git" HEAD:main --follow-tags
+            
